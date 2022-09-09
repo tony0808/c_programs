@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[]) {
 
-    print_shell_message();
+    run_shell();
 
     return 0;
 }
