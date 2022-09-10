@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "parser.h"
 
 // prints shell message
 void print_shell_message(void) 
@@ -53,5 +54,35 @@ void run_shell(void) {
     while(1) {
         print_prompt();
         fgets(command, CMD_SIZE, stdin);    
+        execute_simple_commands(command);
+    }
+}
+
+// exectutes simple commands
+void execute_simple_commands(char *command) {
+    
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        
+        char cmd_path[CMD_SIZE + 4] = "/bin/";
+        char *params[CMD_TOTAL_PARAMS+1] = {0};
+        char **args = parse_simple_command(command); 
+
+        strcat(cmd_path, args[0]);
+        params[0] = (char *)malloc(sizeof(char) * strlen(cmd_path));
+        strcpy(params[0], cmd_path);
+ 
+        for(int i=1; ; i++) {
+            params[i] = args[i];
+            
+            if(args[i] == NULL)
+                break;
+        }
+
+        execv(cmd_path, params);
+    }
+    else {
+        wait(NULL);
     }
 }
