@@ -1,7 +1,8 @@
 #include "shell.h"
 #include "parser.h"
 
-// prints shell message
+// --------- DEFINITION OF GLOBAL FUNCTIONS --------- //
+
 void print_shell_message(void) 
 {
 
@@ -26,26 +27,24 @@ void print_shell_message(void)
     printf("\n");
 }
 
-// prints prompt
 void print_prompt(void)
 {
     static char *login_name = NULL;
-    static char curr_working_dir[PATH_SIZE];
+    char curr_working_dir[PATH_SIZE] = {0};
 
-    if (login_name == NULL && strlen(curr_working_dir) == 0) {
+    if (login_name == NULL) {
         if ((login_name = getlogin()) == NULL) {
             perror("getlogin");
         }
-        
-        if (getcwd(curr_working_dir, PATH_SIZE) == NULL) {
+    }
+
+    if (getcwd(curr_working_dir, PATH_SIZE) == NULL) {
             perror("getcwd");
-        }
     }
 
     printf("%s@csd345sh/%s$ ", login_name, curr_working_dir);
 }
 
-// runs shell
 void run_shell(void) {
 
     char command[CMD_SIZE] = {0};
@@ -54,35 +53,6 @@ void run_shell(void) {
     while(1) {
         print_prompt();
         fgets(command, CMD_SIZE, stdin);    
-        execute_simple_commands(command);
-    }
-}
-
-// exectutes simple commands
-void execute_simple_commands(char *command) {
-    
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        
-        char cmd_path[CMD_SIZE + 4] = "/bin/";
-        char *params[CMD_TOTAL_PARAMS+1] = {0};
-        char **args = parse_simple_command(command); 
-
-        strcat(cmd_path, args[0]);
-        params[0] = (char *)malloc(sizeof(char) * strlen(cmd_path));
-        strcpy(params[0], cmd_path);
- 
-        for(int i=1; ; i++) {
-            params[i] = args[i];
-            
-            if(args[i] == NULL)
-                break;
-        }
-
-        execv(cmd_path, params);
-    }
-    else {
-        wait(NULL);
+        execute_command(command);
     }
 }
