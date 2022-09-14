@@ -1,11 +1,8 @@
 #include "shell.h"
 #include "parser.h"
 
-// --------- DEFINITION OF GLOBAL FUNCTIONS --------- //
-
 void print_shell_message(void) 
 {
-
     size_t width = 25;
     char *msg = "Linux Shell";
     size_t pad = (width - strlen(msg) - 2) / 2;

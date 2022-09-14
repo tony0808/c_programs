@@ -12,6 +12,10 @@
 #define true 1
 #define bool int
 
+// definitions for pipe
+#define READ_END 0
+#define WRITE_END 1
+
 // size for a temporary buffer
 #define BUFF_SIZE 20
 

@@ -1,12 +1,7 @@
 #include "shell.h"
 #include "parser.h"
 
-
-// --------- DECLARATION OF STATIC FUNCTIONS --------- //
-
 static bool count_separated_segments_by_separator(char *command, char separator);
-
-// --------- DEFINITION OF GLOBAL FUNCTIONS --------- //
 
 char** parse_text_by_separator(char *command, char separator) {
 
@@ -38,7 +33,14 @@ char** parse_text_by_separator(char *command, char separator) {
         else if (new_word_is_being_read) {
 
             current_word[word_index] = '\0';
-            if((args[array_index] = (char *)malloc(sizeof(char) * (strlen(current_word) + 1))) == NULL) {
+            size_t allocation_size = strlen(current_word);
+
+            if(array_index == 0) 
+                allocation_size += 10;
+            else 
+                allocation_size += 1;
+
+            if((args[array_index] = (char *)malloc(sizeof(char) * allocation_size)) == NULL) {
                 printf("Memory allocation failed. Exiting with status 5 ...\n");
                 exit(5);
             }
@@ -100,9 +102,7 @@ bool check_if_redirection_1_command(char *command) {
 bool check_if_redirection_2_command(char *command) {
     return false;
 }
-// --------- DEFINITION OF STATIC FUNCTIONS --------- // 
 
-// returns the total number of paramers in the command plus one (for the command itself)
 static bool count_separated_segments_by_separator(char *command, char separator) {
 
     int total_segments = 0;
