@@ -5,8 +5,6 @@
 static void execute_simple_command(char **args);
 static void execute_sequence_command(char **args);
 static void execute_pipeline_command(char **args);
-static void execute_single_pipeline_command(char **args);
-static void execute_multiple_pipeline_command(char **args);
 static void run_command(char **command, cmd cmd_type);
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes);
 static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array);
@@ -58,6 +56,7 @@ static void execute_simple_command(char **args) {
         char cmd_path[CMD_SIZE + 10] = "/usr/bin/";
         char main_command[CMD_SIZE] = {0};
 
+        // this is executed only if parent sets certain flags
         change_standard_stream();
     
         // exec first try
@@ -83,49 +82,10 @@ static void execute_simple_command(char **args) {
 }
 
 static void execute_pipeline_command(char **args) {
-    int pipeline_order = 0;
 
-    for(pipeline_order=0; args[pipeline_order]!=NULL; pipeline_order++);
-
-    if (pipeline_order == 2) {
-        execute_single_pipeline_command(args);
-    }
-    else if (pipeline_order > 2) {
-        execute_multiple_pipeline_command(args);
-    }   
-    else {
-        printf("Should not be here ... Exiting with status 100.\n");
-        exit(10);
-    }
-}
-
-static void execute_single_pipeline_command(char **args) {
-    
-    int fd[2];
-
-    if(pipe(fd) < 0) {
-        exit_with_msg("pipe");
-    }
-
-    // first process
-    declare_new_output_stream(fd[0], fd[1]);
-    execute_command(args[0]);
-    reset_stream_change_variables();
-
-    // second process
-    declare_new_input_stream(fd[0], fd[1]);
-    close(fd[1]);
-    execute_command(args[1]);
-    reset_stream_change_variables();
-    close(fd[0]);
-}
-
-static void execute_multiple_pipeline_command(char **args) {
-
+    // initialize pointer to fd array
     int num_of_commands = 0;
-
     for(; args[num_of_commands]!=NULL; num_of_commands++);
-   
     int **fd_array = allocate_memory_for_ptr_to_pipes(num_of_commands - 1);
 
     // first process gets input from stdin, so it only changes its output stream
@@ -133,7 +93,7 @@ static void execute_multiple_pipeline_command(char **args) {
     execute_command(args[0]);
     reset_stream_change_variables();
 
-    // intermediate processes change both the stdin and the stdout streams
+    // intermediate processes changes both the stdin and the stdout streams
     for(int i=1; i<num_of_commands-1; i++) {
         declare_new_input_stream(fd_array[i-1][0], fd_array[i-1][1]);
         declare_new_output_stream(fd_array[i][0], fd_array[i][1]);
@@ -155,21 +115,23 @@ static void execute_multiple_pipeline_command(char **args) {
 
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes) {
     
+    // allocate memory for pointer to fd array
     int **fd_array = (int **)malloc(sizeof(int *) * num_of_pipes);
-    
     if(fd_array == NULL) {
         printf("Error allocating memory for pointer to pipes. Exiting ...\n");
         exit(1);
     }
 
     for(int i=0; i<num_of_pipes; i++) {
+        
+        // allocate memory for fd array
         fd_array[i] = (int *)malloc(sizeof(int) * 2);
-
         if(fd_array[i] == NULL) {
             printf("Error allocating memory for fd array. Exiting ...\n");
             exit(1);
         }
 
+        // initialize pipe
         if(pipe(fd_array[i]) < 0) {
             exit_with_msg("pipe");
         }
