@@ -83,7 +83,7 @@ bool check_if_pipeline_command(char *command) {
     return false;
 }
 
-bool check_if_redirection_0_command(char *command) {
+bool check_if_redirection_input_command(char *command) {
     for(int i=0; (command[i]!='\0' && command[i]!='\n'); i++) {
         if(command[i] == '<')
             return true;
@@ -91,7 +91,7 @@ bool check_if_redirection_0_command(char *command) {
     return false;
 }
 
-bool check_if_redirection_1_command(char *command) {
+bool check_if_redirection_output_command(char *command) {
     for(int i=0; (command[i]!='\0' && command[i]!='\n'); i++) {
         if(command[i] == '>')
             return true;
@@ -99,12 +99,15 @@ bool check_if_redirection_1_command(char *command) {
     return false;
 }
 
-bool check_if_redirection_2_command(char *command) {
+bool check_if_redirection_append_command(char *command) {
+    for(int i=0; (command[i]!='\0' && command[i]!='\n'); i++) {
+        if(command[i] == '>' && command[i+1] == '>')
+            return true;
+    }
     return false;
 }
 
 static bool count_separated_segments_by_separator(char *command, char separator) {
-
     int total_segments = 0;
     bool reading_segment = false;
 
@@ -132,16 +135,18 @@ void set_command_type(char *command, cmd *cmd_type) {
     else if(check_if_pipeline_command(command)){
         *cmd_type = PIPELINE_CMD;
     }
-    else if(check_if_redirection_0_command(command)) {
+    else if(check_if_redirection_input_command(command)) {
         *cmd_type = REDIRECTION_INPUT_CMD;
     }   
-    else if(check_if_redirection_1_command(command)) {
+    else if(check_if_redirection_append_command(command)) {
+        *cmd_type = REDIRECTION_OUTPUT_APPEND_CMD;
+    }
+    else if(check_if_redirection_output_command(command)) {
         *cmd_type = REDIRECTION_OUTPUT_CMD;
     } 
 }
 
 void parse_command(char *command, cmd cmd_type, char ***parsed_command) {
-    
     if(cmd_type == SEQUENCE_CMD) {
         *parsed_command = parse_text_by_separator(command, ';');
     }
@@ -152,6 +157,9 @@ void parse_command(char *command, cmd cmd_type, char ***parsed_command) {
         *parsed_command = parse_text_by_separator(command, '<');
     }
     else if(cmd_type == REDIRECTION_OUTPUT_CMD) {
+        *parsed_command = parse_text_by_separator(command, '>');
+    }
+    else if(cmd_type == REDIRECTION_OUTPUT_APPEND_CMD) {
         *parsed_command = parse_text_by_separator(command, '>');
     }
     else {

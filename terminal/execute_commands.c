@@ -7,12 +7,12 @@ static void execute_sequence_command(char **args);
 static void execute_pipeline_command(char **args);
 static void execute_redirection_input_command(char **args);
 static void execute_redirection_output_command(char **args);
+static void execute_redirection_append_command(char **args);
 static void run_command(char **command, cmd cmd_type);
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes);
 static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array);
 
 void execute_command(char *command) {
-
     cmd cmd_type = SIMPLE_CMD;
     char **parsed_command = NULL;
 
@@ -38,6 +38,9 @@ static void run_command(char **command, cmd cmd_type) {
     else if(cmd_type == REDIRECTION_OUTPUT_CMD) {
         execute_redirection_output_command(command);
     }
+    else if(cmd_type == REDIRECTION_OUTPUT_APPEND_CMD) {
+        execute_redirection_append_command(command);
+    }
 }
 
 static void execute_sequence_command(char **args) {
@@ -47,7 +50,6 @@ static void execute_sequence_command(char **args) {
 }
 
 static void execute_simple_command(char **args) {
-
     if(strcmp("cd", args[0]) == 0) {
         chdir(args[1]);
         return;
@@ -60,14 +62,13 @@ static void execute_simple_command(char **args) {
     pid_t pid = fork();
 
     if (pid == 0) {
-        
         char cmd_path[CMD_SIZE + 10] = "/usr/bin/";
         char main_command[CMD_SIZE] = {0};
-
+        
         // these are executed only if parent sets certain flags
         change_standard_stream();
         redirect_file_stream();
-    
+        
         // exec first try
         strcpy(main_command, args[0]);
         strcat(cmd_path, main_command);
@@ -86,7 +87,6 @@ static void execute_simple_command(char **args) {
         perror("fork");
         exit(1);
     }
-
     wait(NULL);
 }
 
@@ -122,6 +122,17 @@ static void execute_pipeline_command(char **args) {
     free_memory_for_ptr_to_pipes(num_of_commands-1, fd_array);    
 }
 
+static void execute_redirection_append_command(char **args) {
+    FILE *fptr = fopen(args[1], "a");
+    if(fptr == NULL) {
+        exit_with_msg("fopen");
+    }
+    set_fd_output_redirection(fileno(fptr));
+    execute_command(args[0]);
+    reset_redirect_variables();
+    fclose(fptr);
+}
+
 static void execute_redirection_output_command(char **args) {
     FILE *fptr = fopen(args[1], "w");
     if(fptr == NULL) {
@@ -145,7 +156,6 @@ static void execute_redirection_input_command(char **args) {
 }
 
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes) {
-    
     // allocate memory for pointer to fd array
     int **fd_array = (int **)malloc(sizeof(int *) * num_of_pipes);
     if(fd_array == NULL) {
@@ -167,12 +177,10 @@ static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes) {
             exit_with_msg("pipe");
         }
     }
-
     return fd_array;
 }
 
 static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array) {
-
     for(int i=0; i<num_of_pipes; i++) {
         free(fd_array[i]);
     }

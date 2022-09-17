@@ -12,6 +12,7 @@ static int fd_write_end_stream_input = -1;
 // variables for redirection
 static int input_redirection = -1;
 static int output_redirection = -1;
+static int append_redirection = -1;
 
 void reset_stream_change_variables(void) {
     input_stream = -1;
@@ -64,9 +65,14 @@ void redirect_file_stream(void) {
         dup2(output_redirection, STDOUT_FILENO);
         close(output_redirection);
     }
+    if(append_redirection >= 0) {
+        dup2(append_redirection, STDIN_FILENO);
+        close(append_redirection);
+    }
 }
 
 void reset_redirect_variables(void) {
     input_redirection = -1;
     output_redirection = -1;
+    append_redirection = -1;
 }
