@@ -8,6 +8,8 @@ static void execute_pipeline_command(char **args);
 static void execute_single_pipeline_command(char **args);
 static void execute_multiple_pipeline_command(char **args);
 static void run_command(char **command, cmd cmd_type);
+static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes);
+static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array);
 
 void execute_command(char *command) {
 
@@ -105,14 +107,12 @@ static void execute_single_pipeline_command(char **args) {
         exit_with_msg("pipe");
     }
 
-    for(int i=0; args[i]!=NULL; i++) {
-        printf("cmd: %s\n", args[i]);
-    }
-   
+    // first process
     declare_new_output_stream(fd[0], fd[1]);
     execute_command(args[0]);
     reset_stream_change_variables();
 
+    // second process
     declare_new_input_stream(fd[0], fd[1]);
     close(fd[1]);
     execute_command(args[1]);
@@ -121,5 +121,67 @@ static void execute_single_pipeline_command(char **args) {
 }
 
 static void execute_multiple_pipeline_command(char **args) {
+
+    int num_of_commands = 0;
+
+    for(; args[num_of_commands]!=NULL; num_of_commands++);
+   
+    int **fd_array = allocate_memory_for_ptr_to_pipes(num_of_commands - 1);
+
+    // first process gets input from stdin, so it only changes its output stream
+    declare_new_output_stream(fd_array[0][0], fd_array[0][1]);
+    execute_command(args[0]);
+    reset_stream_change_variables();
+
+    // intermediate processes change both the stdin and the stdout streams
+    for(int i=1; i<num_of_commands-1; i++) {
+        declare_new_input_stream(fd_array[i-1][0], fd_array[i-1][1]);
+        declare_new_output_stream(fd_array[i][0], fd_array[i][1]);
+        close(fd_array[i-1][1]);
+        execute_command(args[i]);
+        reset_stream_change_variables();
+        close(fd_array[i-1][0]);
+    }
+
+    // last process puts output in stdout, so it only changes its input stream
+    declare_new_input_stream(fd_array[num_of_commands-2][0], fd_array[num_of_commands-2][1]);
+    close(fd_array[num_of_commands-2][1]);
+    execute_command(args[num_of_commands-1]);
+    reset_stream_change_variables();
+    close(fd_array[num_of_commands-2][0]);
+
+    free_memory_for_ptr_to_pipes(num_of_commands-1, fd_array);    
+}
+
+static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes) {
     
+    int **fd_array = (int **)malloc(sizeof(int *) * num_of_pipes);
+    
+    if(fd_array == NULL) {
+        printf("Error allocating memory for pointer to pipes. Exiting ...\n");
+        exit(1);
+    }
+
+    for(int i=0; i<num_of_pipes; i++) {
+        fd_array[i] = (int *)malloc(sizeof(int) * 2);
+
+        if(fd_array[i] == NULL) {
+            printf("Error allocating memory for fd array. Exiting ...\n");
+            exit(1);
+        }
+
+        if(pipe(fd_array[i]) < 0) {
+            exit_with_msg("pipe");
+        }
+    }
+
+    return fd_array;
+}
+
+static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array) {
+
+    for(int i=0; i<num_of_pipes; i++) {
+        free(fd_array[i]);
+    }
+    free(fd_array);
 }
