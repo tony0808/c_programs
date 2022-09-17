@@ -106,6 +106,10 @@ static void execute_single_pipeline_command(char **args) {
     if(pipe(fd) < 0) {
         exit_with_msg("pipe");
     }
+
+    for(int i=0; args[i]!=NULL; i++) {
+        printf("cmd: %s\n", args[i]);
+    }
    
     declare_new_output_stream(fd[0], fd[1]);
     execute_command(args[0]);
