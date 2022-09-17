@@ -1,6 +1,6 @@
 #include "shell.h"
 #include "parser.h"
-#include "utilities.h"
+#include "streams.h"
 
 static void execute_simple_command(char **args);
 static void execute_sequence_command(char **args);
@@ -57,8 +57,7 @@ static void execute_simple_command(char **args) {
         char main_command[CMD_SIZE] = {0};
 
         change_standard_stream();
-        reset_stream_change_variables();
-        
+    
         // exec first try
         strcpy(main_command, args[0]);
         strcat(cmd_path, main_command);
@@ -101,21 +100,26 @@ static void execute_pipeline_command(char **args) {
 static void execute_single_pipeline_command(char **args) {
     
     int fd[2];
-    pid_t pid;
 
     if(pipe(fd) < 0) {
         exit_with_msg("pipe");
     }
+
+    for(int i=0; args[i]!=NULL; i++) {
+        printf("cmd: %s\n", args[i]);
+    }
    
     declare_new_output_stream(fd[0], fd[1]);
     execute_command(args[0]);
+    reset_stream_change_variables();
 
     declare_new_input_stream(fd[0], fd[1]);
     close(fd[1]);
     execute_command(args[1]);
+    reset_stream_change_variables();
     close(fd[0]);
 }
 
 static void execute_multiple_pipeline_command(char **args) {
-    printf("executing multiple pipeline command\n");
+    
 }
