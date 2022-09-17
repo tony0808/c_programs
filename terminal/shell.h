@@ -39,4 +39,6 @@ void run_shell(void);
 
 void execute_command(char *command);
 
+void exit_with_msg(char *msg);
+
 #endif

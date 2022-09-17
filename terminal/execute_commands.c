@@ -1,15 +1,13 @@
 #include "shell.h"
 #include "parser.h"
+#include "utilities.h"
 
 static void execute_simple_command(char **args);
 static void execute_sequence_command(char **args);
 static void execute_pipeline_command(char **args);
 static void execute_single_pipeline_command(char **args);
 static void execute_multiple_pipeline_command(char **args);
-static void set_command_type(char *command, cmd *cmd_type);
-static void parse_command(char *command, cmd cmd_type, char ***parse_command);
 static void run_command(char **command, cmd cmd_type);
-
 
 void execute_command(char *command) {
 
@@ -20,40 +18,6 @@ void execute_command(char *command) {
     parse_command(command, cmd_type, &parsed_command);
     run_command(parsed_command, cmd_type);
     free_allocated_memory_for_parsed_text(parsed_command);
-}
-
-static void set_command_type(char *command, cmd *cmd_type) {
-    if(check_if_sequence_command(command)) {
-        *cmd_type = SEQUENCE_CMD;
-    }
-    else if(check_if_pipeline_command(command)){
-        *cmd_type = PIPELINE_CMD;
-    }
-    else if(check_if_redirection_0_command(command)) {
-        *cmd_type = REDIRECTION_0_CMD;
-    }   
-    else if(check_if_redirection_1_command(command)) {
-        *cmd_type = REDIRECTION_1_CMD;
-    } 
-}
-
-static void parse_command(char *command, cmd cmd_type, char ***parsed_command) {
-    
-    if(cmd_type == SEQUENCE_CMD) {
-        *parsed_command = parse_text_by_separator(command, ';');
-    }
-    else if(cmd_type == PIPELINE_CMD) {
-        *parsed_command = parse_text_by_separator(command, '|');
-    }
-    else if(cmd_type == REDIRECTION_0_CMD) {
-        *parsed_command = parse_text_by_separator(command, '>');
-    }
-    else if(cmd_type == REDIRECTION_1_CMD) {
-        *parsed_command = parse_text_by_separator(command, '<');
-    }
-    else {
-        *parsed_command = parse_text_by_separator(command, ' ');
-    }
 }
 
 static void run_command(char **command, cmd cmd_type) {
@@ -88,12 +52,16 @@ static void execute_simple_command(char **args) {
     pid_t pid = fork();
 
     if (pid == 0) {
+        
         char cmd_path[CMD_SIZE + 10] = "/usr/bin/";
         char main_command[CMD_SIZE] = {0};
 
+        change_standard_stream();
+        reset_stream_change_variables();
+        
         // exec first try
         strcpy(main_command, args[0]);
-        strcat(cmd_path, args[0]);
+        strcat(cmd_path, main_command);
         args[0] = cmd_path;
         execv(cmd_path, args);
 
@@ -111,7 +79,6 @@ static void execute_simple_command(char **args) {
     }
 
     wait(NULL);
-    
 }
 
 static void execute_pipeline_command(char **args) {
@@ -134,31 +101,19 @@ static void execute_pipeline_command(char **args) {
 static void execute_single_pipeline_command(char **args) {
     
     int fd[2];
+    pid_t pid;
 
     if(pipe(fd) < 0) {
-        perror("pipe");
-        exit(1);
+        exit_with_msg("pipe");
     }
+   
+    declare_new_output_stream(fd[0], fd[1]);
+    execute_command(args[0]);
 
-    pid_t pid = fork();
-    
-    if(pid == 0) {
-        printf("here child\n");
-        dup2(fd[WRITE_END], STDOUT_FILENO);
-        close(fd[WRITE_END]);
-        close(fd[READ_END]);
-        printf("command: %s\n", args[0]);
-        exit(0);
-    }
-    else if(pid < 0){
-        perror("fork");
-        exit(1);
-    }
-
-    wait(NULL);
-
-    
-    
+    declare_new_input_stream(fd[0], fd[1]);
+    close(fd[1]);
+    execute_command(args[1]);
+    close(fd[0]);
 }
 
 static void execute_multiple_pipeline_command(char **args) {

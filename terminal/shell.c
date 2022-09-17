@@ -1,6 +1,11 @@
 #include "shell.h"
 #include "parser.h"
 
+void exit_with_msg(char *msg) {
+    perror(msg);
+    exit(1);
+}
+
 void print_shell_message(void) 
 {
     size_t width = 25;

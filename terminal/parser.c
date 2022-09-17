@@ -124,3 +124,37 @@ static bool count_separated_segments_by_separator(char *command, char separator)
     }   
     return total_segments;
 }
+
+void set_command_type(char *command, cmd *cmd_type) {
+    if(check_if_sequence_command(command)) {
+        *cmd_type = SEQUENCE_CMD;
+    }
+    else if(check_if_pipeline_command(command)){
+        *cmd_type = PIPELINE_CMD;
+    }
+    else if(check_if_redirection_0_command(command)) {
+        *cmd_type = REDIRECTION_0_CMD;
+    }   
+    else if(check_if_redirection_1_command(command)) {
+        *cmd_type = REDIRECTION_1_CMD;
+    } 
+}
+
+void parse_command(char *command, cmd cmd_type, char ***parsed_command) {
+    
+    if(cmd_type == SEQUENCE_CMD) {
+        *parsed_command = parse_text_by_separator(command, ';');
+    }
+    else if(cmd_type == PIPELINE_CMD) {
+        *parsed_command = parse_text_by_separator(command, '|');
+    }
+    else if(cmd_type == REDIRECTION_0_CMD) {
+        *parsed_command = parse_text_by_separator(command, '>');
+    }
+    else if(cmd_type == REDIRECTION_1_CMD) {
+        *parsed_command = parse_text_by_separator(command, '<');
+    }
+    else {
+        *parsed_command = parse_text_by_separator(command, ' ');
+    }
+}
