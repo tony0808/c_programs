@@ -85,7 +85,7 @@ bool check_if_pipeline_command(char *command) {
 
 bool check_if_redirection_0_command(char *command) {
     for(int i=0; (command[i]!='\0' && command[i]!='\n'); i++) {
-        if(command[i] == '>')
+        if(command[i] == '<')
             return true;
     }
     return false;
@@ -93,7 +93,7 @@ bool check_if_redirection_0_command(char *command) {
 
 bool check_if_redirection_1_command(char *command) {
     for(int i=0; (command[i]!='\0' && command[i]!='\n'); i++) {
-        if(command[i] == '<')
+        if(command[i] == '>')
             return true;
     }
     return false;
@@ -133,10 +133,10 @@ void set_command_type(char *command, cmd *cmd_type) {
         *cmd_type = PIPELINE_CMD;
     }
     else if(check_if_redirection_0_command(command)) {
-        *cmd_type = REDIRECTION_0_CMD;
+        *cmd_type = REDIRECTION_INPUT_CMD;
     }   
     else if(check_if_redirection_1_command(command)) {
-        *cmd_type = REDIRECTION_1_CMD;
+        *cmd_type = REDIRECTION_OUTPUT_CMD;
     } 
 }
 
@@ -148,11 +148,11 @@ void parse_command(char *command, cmd cmd_type, char ***parsed_command) {
     else if(cmd_type == PIPELINE_CMD) {
         *parsed_command = parse_text_by_separator(command, '|');
     }
-    else if(cmd_type == REDIRECTION_0_CMD) {
-        *parsed_command = parse_text_by_separator(command, '>');
-    }
-    else if(cmd_type == REDIRECTION_1_CMD) {
+    else if(cmd_type == REDIRECTION_INPUT_CMD) {
         *parsed_command = parse_text_by_separator(command, '<');
+    }
+    else if(cmd_type == REDIRECTION_OUTPUT_CMD) {
+        *parsed_command = parse_text_by_separator(command, '>');
     }
     else {
         *parsed_command = parse_text_by_separator(command, ' ');

@@ -5,6 +5,8 @@
 static void execute_simple_command(char **args);
 static void execute_sequence_command(char **args);
 static void execute_pipeline_command(char **args);
+static void execute_redirection_input_command(char **args);
+static void execute_redirection_output_command(char **args);
 static void run_command(char **command, cmd cmd_type);
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes);
 static void free_memory_for_ptr_to_pipes(int num_of_pipes, int **fd_array);
@@ -29,6 +31,12 @@ static void run_command(char **command, cmd cmd_type) {
     }
     else if(cmd_type == PIPELINE_CMD) {
         execute_pipeline_command(command);
+    }
+    else if(cmd_type == REDIRECTION_INPUT_CMD) {
+        execute_redirection_input_command(command);
+    }
+    else if(cmd_type == REDIRECTION_OUTPUT_CMD) {
+        execute_redirection_output_command(command);
     }
 }
 
@@ -56,8 +64,9 @@ static void execute_simple_command(char **args) {
         char cmd_path[CMD_SIZE + 10] = "/usr/bin/";
         char main_command[CMD_SIZE] = {0};
 
-        // this is executed only if parent sets certain flags
+        // these are executed only if parent sets certain flags
         change_standard_stream();
+        redirect_file_stream();
     
         // exec first try
         strcpy(main_command, args[0]);
@@ -111,6 +120,28 @@ static void execute_pipeline_command(char **args) {
     close(fd_array[num_of_commands-2][0]);
 
     free_memory_for_ptr_to_pipes(num_of_commands-1, fd_array);    
+}
+
+static void execute_redirection_output_command(char **args) {
+    FILE *fptr = fopen(args[1], "w");
+    if(fptr == NULL) {
+        exit_with_msg("fopen");
+    }
+    set_fd_output_redirection(fileno(fptr));
+    execute_command(args[0]);
+    reset_redirect_variables();
+    fclose(fptr);
+}
+
+static void execute_redirection_input_command(char **args) {
+    FILE *fptr = fopen(args[1], "r");
+    if(fptr == NULL) {
+        exit_with_msg("fopen");
+    }
+    set_fd_input_redirection(fileno(fptr));
+    execute_command(args[0]);
+    reset_redirect_variables();
+    fclose(fptr);
 }
 
 static int** allocate_memory_for_ptr_to_pipes(int num_of_pipes) {

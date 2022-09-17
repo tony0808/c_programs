@@ -1,12 +1,17 @@
 #include "streams.h"
 #include "shell.h"
 
+// variables for pipelining
 static int input_stream = -1;
 static int output_stream = -1;
 static int fd_read_end_stream_output = -1;
 static int fd_write_end_stream_output = -1;
 static int fd_read_end_stream_input = -1;
 static int fd_write_end_stream_input = -1;
+
+// variables for redirection
+static int input_redirection = -1;
+static int output_redirection = -1;
 
 void reset_stream_change_variables(void) {
     input_stream = -1;
@@ -40,4 +45,28 @@ void change_standard_stream(void) {
         close(fd_read_end_stream_input);
         close(fd_write_end_stream_input);
     }
+}
+
+void set_fd_input_redirection(int fd) {
+    input_redirection = fd;
+}
+
+void set_fd_output_redirection(int fd) {
+    output_redirection = fd;
+}
+
+void redirect_file_stream(void) {
+    if(input_redirection >= 0) {
+        dup2(input_redirection, STDIN_FILENO);
+        close(input_redirection);
+    }
+    if(output_redirection >= 0) {
+        dup2(output_redirection, STDOUT_FILENO);
+        close(output_redirection);
+    }
+}
+
+void reset_redirect_variables(void) {
+    input_redirection = -1;
+    output_redirection = -1;
 }

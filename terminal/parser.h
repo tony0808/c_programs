@@ -7,9 +7,9 @@ typedef enum {
     SIMPLE_CMD,
     SEQUENCE_CMD,
     PIPELINE_CMD,
-    REDIRECTION_0_CMD,
-    REDIRECTION_1_CMD,
-    REDIRECTION_2_CMD
+    REDIRECTION_INPUT_CMD,
+    REDIRECTION_OUTPUT_CMD,
+    REDIRECTION_OUTPUT_APPEND_CMD
 } cmd;
 
 char** parse_text_by_separator(char *command, char separator);
